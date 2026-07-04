@@ -3,6 +3,8 @@ import pg from 'pg';
 import { z } from 'zod';
 import type { SqlResult } from './types.js';
 
+const { Pool } = pg;
+
 const RunSqlInputSchema = z.object({
   query: z
     .string()
@@ -28,27 +30,13 @@ export const runSqlToolDef = {
   },
 } as const;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let pool: InstanceType<typeof pg.Pool> | null = null;
+let pool: InstanceType<typeof Pool> | null = null;
 
-function getPool(): InstanceType<typeof pg.Pool> {
+function getPool(): InstanceType<typeof Pool> {
   if (!pool) {
-    const config = { connectionString: process.env.DATABASE_URL_READONLY };
-    // Use Reflect.construct so both real pg.Pool (class) and vi.fn mocks work.
-    // For vi.fn mocks with arrow function implementations, fall back to a direct call.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const PoolCtor = pg.Pool as any;
-    try {
-      pool = new PoolCtor(config);
-    } catch (e) {
-      if (e instanceof TypeError && String(e.message).includes('is not a constructor')) {
-        pool = PoolCtor(config);
-      } else {
-        throw e;
-      }
-    }
+    pool = new Pool({ connectionString: process.env.DATABASE_URL_READONLY });
   }
-  return pool!;
+  return pool;
 }
 
 export async function runSql(input: unknown): Promise<SqlResult> {
