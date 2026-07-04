@@ -60,6 +60,18 @@ describe('runSql — SELECT guard', () => {
     expect(result.rowCount).toBe(1);
   });
 
+  it('rejects statement stacking', async () => {
+    await expect(
+      runSql({ query: "SELECT 1; DELETE FROM products" }),
+    ).rejects.toThrow('Több utasítás');
+  });
+
+  it('allows trailing semicolon', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+    const result = await runSql({ query: 'SELECT name FROM products LIMIT 1;' });
+    expect(result.rowCount).toBe(0);
+  });
+
   it('closes the pool via closePool()', async () => {
     await closePool();
     expect(mockEnd).toHaveBeenCalled();

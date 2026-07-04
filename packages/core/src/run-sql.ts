@@ -11,6 +11,9 @@ const RunSqlInputSchema = z.object({
     .min(1)
     .refine((q) => /^\s*SELECT\s/i.test(q), {
       message: 'Csak SELECT lekérdezés engedélyezett (NFR1).',
+    })
+    .refine((q) => !/;.+\S/s.test(q), {
+      message: 'Több utasítás nem engedélyezett.',
     }),
 });
 
