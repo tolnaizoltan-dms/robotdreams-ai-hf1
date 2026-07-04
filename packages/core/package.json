@@ -13,5 +13,13 @@
     "typecheck": "tsc --project tsconfig.json --noEmit",
     "test": "vitest run",
     "lint": "eslint src"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.110.0",
+    "pg": "^8.22.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.14"
   }
 }
