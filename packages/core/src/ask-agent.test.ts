@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // --- mocks (hoisted so they run before imports) ---
 const mockCreate = vi.fn();
+const mockListCategories = vi.fn();
 vi.mock('@anthropic-ai/sdk', () => ({
   default: vi.fn(function () {
     return { messages: { create: mockCreate } };
@@ -15,6 +16,15 @@ vi.mock('./run-sql.js', () => ({
     description: 'mock',
     input_schema: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] },
   },
+}));
+
+vi.mock('./list-categories.js', () => ({
+  listCategoriesToolDef: {
+    name: 'listCategories',
+    description: 'mock',
+    input_schema: { type: 'object', properties: {}, required: [] },
+  },
+  listCategories: mockListCategories,
 }));
 
 vi.mock('./logger.js', () => ({
@@ -98,6 +108,35 @@ describe('askAgent', () => {
     await askAgent('teszt', { onVerbose });
 
     expect(onVerbose).toHaveBeenCalled();
+  });
+
+  it('dispatches listCategories tool and returns result', async () => {
+    mockListCategories.mockResolvedValueOnce(['kaktusz', 'pozsgás', 'szobanövény']);
+
+    mockCreate
+      .mockResolvedValueOnce({
+        stop_reason: 'tool_use',
+        content: [
+          {
+            type: 'tool_use',
+            id: 'tu_cat',
+            name: 'listCategories',
+            input: {},
+          },
+        ],
+        usage: { input_tokens: 30, output_tokens: 10 },
+      })
+      .mockResolvedValueOnce({
+        stop_reason: 'end_turn',
+        content: [{ type: 'text', text: 'A kategóriák: kaktusz, pozsgás, szobanövény.' }],
+        usage: { input_tokens: 60, output_tokens: 15 },
+      });
+
+    const result = await askAgent('Milyen kategóriák vannak?');
+
+    expect(mockListCategories).toHaveBeenCalledOnce();
+    expect(result.answer).toBe('A kategóriák: kaktusz, pozsgás, szobanövény.');
+    expect(result.inputTokens).toBe(90);
   });
 
   it('includes runSql error in tool result and continues', async () => {

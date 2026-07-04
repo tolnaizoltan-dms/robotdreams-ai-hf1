@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import type { MessageParam } from '@anthropic-ai/sdk/resources/messages.js';
 import { SYSTEM_PROMPT } from './schema-context.js';
 import { runSql, runSqlToolDef } from './run-sql.js';
+import { listCategories, listCategoriesToolDef } from './list-categories.js';
 import { writeLog } from './logger.js';
 import type { AgentResponse, LogEntry, SqlResult } from './types.js';
 
@@ -37,7 +38,7 @@ export async function askAgent(
         model,
         max_tokens: 4096,
         system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-        tools: [runSqlToolDef],
+        tools: [runSqlToolDef, listCategoriesToolDef],
         messages,
       });
 
@@ -63,24 +64,27 @@ export async function askAgent(
         for (const block of response.content) {
           if (block.type !== 'tool_use') continue;
 
-          if (block.name !== 'runSql') {
-            toolResults.push({
-              type: 'tool_result',
-              tool_use_id: block.id,
-              content: `Ismeretlen eszköz: ${block.name}`,
-            });
-            continue;
-          }
-
           let content: string;
-          try {
-            const result = await runSql(block.input);
-            const query = (block.input as { query: string }).query;
-            sqlQueries.push(query);
-            sqlResults.push(result);
-            content = JSON.stringify(result.rows);
-          } catch (err) {
-            content = `Hiba: ${err instanceof Error ? err.message : String(err)}`;
+
+          if (block.name === 'runSql') {
+            try {
+              const result = await runSql(block.input);
+              const query = (block.input as { query: string }).query;
+              sqlQueries.push(query);
+              sqlResults.push(result);
+              content = JSON.stringify(result.rows);
+            } catch (err) {
+              content = `Hiba: ${err instanceof Error ? err.message : String(err)}`;
+            }
+          } else if (block.name === 'listCategories') {
+            try {
+              const categories = await listCategories();
+              content = JSON.stringify(categories);
+            } catch (err) {
+              content = `Hiba: ${err instanceof Error ? err.message : String(err)}`;
+            }
+          } else {
+            content = `Ismeretlen eszköz: ${block.name}`;
           }
 
           toolResults.push({ type: 'tool_result', tool_use_id: block.id, content });

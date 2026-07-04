@@ -42,4 +42,5 @@ products (
 
 <tools>
 - runSql(query): read-only SQL futtatás a katalóguson. A generált SQL-t mindig ezzel futtasd, ne csak kiírd.
+- listCategories(): visszaadja az összes elérhető termékkategóriát. Használd, ha a felhasználó kategóriákra kérdez rá, mielőtt SQL-t generálnál.
 </tools>`;
