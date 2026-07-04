@@ -26,7 +26,7 @@ export const runSqlToolDef = {
         description: 'SQL SELECT lekérdezés a products táblán. Mindig LIMIT-tel.',
       },
     },
-    required: ['query'],
+    required: ['query'] as string[],
   },
 } as const;
 
