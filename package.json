@@ -1,0 +1,22 @@
+{
+  "name": "plantbase",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "nx run-many -t build",
+    "test": "nx run-many -t test",
+    "typecheck": "nx run-many -t typecheck",
+    "lint": "nx run-many -t lint",
+    "format": "prettier --write \"**/*.{ts,json,md}\" --ignore-path .prettierignore"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "eslint": "^9.28.0",
+    "nx": "23.0.1",
+    "prettier": "^3.9.4",
+    "tsx": "^4.23.0",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.62.1",
+    "vitest": "^4.1.9"
+  }
+}
