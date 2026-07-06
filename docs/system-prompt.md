@@ -4,6 +4,49 @@
 
 ---
 
+## Mi változott és miért
+
+A kurzus által kapott alap system prompt működő v1 volt, de a HF1 fejlesztése és a tesztelés során három gyenge pont rajzolódott ki. Az alábbi javítások célja: **kevesebb hallucináció**, **pontosabb SQL**, **jobb válaszformátum**, és **szinkron a `listCategories` tool-lal**.
+
+### Kiinduló problémák
+
+| Probléma | Hatás |
+| --- | --- |
+| A `<task>` egy lépésben írta le a folyamatot | A modell néha SQL-t generált futtatás nélkül, vagy kihagyta a tool hívást |
+| Hiányzó `listCategories` utasítás | Kategória-kérdésnél enum értékeket találgatott a DB helyett |
+| Rövid, általános `<rules>` | Hibás SQL: boolean mezők szövegesen, hiányzó `location` szűrés, nincs `SUM` büdzsénél |
+| Nincs `<examples>` blokk | Few-shot hiány → inkonzisztens SQL minták |
+| A `<schema>` kommentjei homályosak | `pet_safe` típusa, `stock = 0` jelentése nem volt egyértelmű |
+
+### Változtatások
+
+| Szekció | Mi változott | Miért |
+| --- | --- | --- |
+| `<role>` | „Csak a katalógusban létező adatokra hivatkozhatsz" | Explicit hallucináció-tilalom — a BRS szerint csak valós katalógus-adat számít |
+| `<task>` | 4 lépéses folyamat + `listCategories` + „mindig futtasd le" | Tool-use sorrend rögzítése; a HF1 kötelező `listCategories` tool bekötése |
+| `<schema>` | Mértékegységek (cm, HUF), boolean típus, rating skála | Kevesebb típushiba az SQL generálásnál |
+| `<rules>` | 7 → 12 szabály: `location IN`, boolean `= true`, akció feltétel, rendezés, 0 találat | A leggyakoribb hibák lefedése (beltéri/kültéri, `COALESCE` összegzés, `LIMIT` 20 vs 50) |
+| `<behavior>` | Válaszformátum (bevezető + felsorolás + záró összeg), SQL tiltás a válaszban | A lakberendező olvasható ajánlatot kap, nem tábla-dumpot |
+| `<examples>` | **Új blokk** — állatbarát keresés + büdzsés csomag | Few-shot: helyes SQL minták a leggyakoribb use case-ekre |
+| `<tools>` | `listCategories()` hozzáadva | Szinkron az `askAgent` tools tömbjével és a `list-categories.ts` implementációval |
+
+### Szinkron a kóddal
+
+A prompt két helyen él, és szándékosan **azonos**:
+
+- [`docs/system-prompt.md`](./system-prompt.md) — dokumentáció, beadás, review
+- [`packages/core/src/schema-context.ts`](../packages/core/src/schema-context.ts) — futásidőben az `askAgent` adja a modellnek (prompt cache)
+
+A javítás commitja: `feat(core): improve system prompt quality and sync with tools` (`1f177e4`).
+
+### Várható hatás
+
+- Kategória-kérdés → `listCategories` tool, nem találgatás
+- Büdzsés csomag → `SUM(COALESCE(sale_price, price))`, `location` + `light` szűrés
+- Válasz → magyar, strukturált, SQL nélkül a felhasználó felé
+
+---
+
 ```xml
 <role>
 Te a Plantbase asszisztens vagy: egy lakberendezőnek (és otthoni felhasználóknak) segítesz növényt választani és növénycsomagot összeállítani egy webshop katalógusa alapján. Csak a katalógusban létező adatokra hivatkozhatsz — soha ne találj ki terméket, árat vagy attribútumot.
