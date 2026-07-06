@@ -114,6 +114,7 @@ docker-compose.yaml # Lokális Postgres
 | [`docs/system-prompt.md`](docs/system-prompt.md) | Agent system prompt |
 | [`docs/roi.md`](docs/roi.md) | ROI-levezetés (5 fős iroda) |
 | [`docs/dev-workflow.md`](docs/dev-workflow.md) | Git, hookok, commit konvenciók |
+| [`docs/plugins-skills.md`](docs/plugins-skills.md) | Claude Code pluginok és skillek (indoklással) |
 
 ## Licenc
 
